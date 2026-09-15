@@ -9,7 +9,7 @@ public class StationInformationService
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private const string ApiAddress =
-        "https://gbfs.lyft.com/gbfs/2.3/bkn/en/station_information.json"
+        "https://gbfs.lyft.com/gbfs/2.3/bkn/en/station_information.json";
     private readonly ILogger<StationInformationService> _logger;
 
     public StationInformationService(
