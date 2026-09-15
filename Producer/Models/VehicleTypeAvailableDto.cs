@@ -2,10 +2,10 @@ using System.Text.Json.Serialization;
 
 namespace Producer.Models;
 
-public class VehicleTypeAvailable
+public class VehicleTypeAvailableDto
 {
     [JsonPropertyName("vehicle_type_id")]
-    public int VehiclTypeId { get; set; }
+    public string VehicleTypeId { get; set; } = null!;
 
     [JsonPropertyName("count")]
     public int Count { get; set; }
