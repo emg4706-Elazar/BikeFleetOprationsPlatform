@@ -1,8 +1,8 @@
 
 
-namespace Producer.Models;
+namespace Processor.Models;
 
-public class OprationalState
+public class OperationalState
 {
     public bool IsInstalled { get; set; }
     public bool IsRenting { get; set; }

@@ -1,6 +1,6 @@
 
 
-namespace Producer.Models;
+namespace Processor.Models;
 
 public class Availability
 {
