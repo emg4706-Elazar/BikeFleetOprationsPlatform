@@ -2,10 +2,10 @@ CREATE TABLE Stations
 (
 	station_id VARCHAR(100) PRIMARY KEY,
 	station_name VARCHAR(255) NOT NULL,
-	short_Name VARCHAR(50) NOT NULL,
+	short_name VARCHAR(50) NULL,
 	longitude DECIMAL(10,7) NOT NULL,
 	latitude DECIMAL(9,7) NOT NULL,
-	region_id VARCHAR(50) NOT NULL,
+	region_id VARCHAR(50) NULL,
 	capacity INT NOT NULL,
 	android_uri VARCHAR(500) NULL,
 	ios_uri VARCHAR(500) NULL,
