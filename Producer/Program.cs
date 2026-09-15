@@ -15,6 +15,7 @@ public class Program
         builder.Services.AddHttpClient();
 
         builder.Services.AddHostedService<StationStatusService>();
+        builder.Services.AddHostedService<StationInformationService>();
 
         using IHost host = builder.Build();
 

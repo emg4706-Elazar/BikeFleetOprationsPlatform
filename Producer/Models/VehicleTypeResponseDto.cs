@@ -1,10 +1,9 @@
 ﻿
-
 namespace Producer.Models;
 
-public class StationInformationResponseDto
+public class VehicleTypeResponseDto
 {
-    public StationInformationDataDto Data { get; set; } = null!;
+    public VehicleTypeDataDto Data { get; set; } = null!;
     public long LastUpdated { get; set; }
     public int Ttl { get; set; }
     public string Version { get; set; } = null!;

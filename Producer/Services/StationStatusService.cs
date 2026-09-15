@@ -9,6 +9,11 @@ namespace Producer.Services;
 public class StationStatusService : BackgroundService
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private static readonly JsonSerializerOptions JsonOptions =
+        new(JsonSerializerDefaults.Web)
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+        };
     private const string ApiAddress =
     "https://gbfs.lyft.com/gbfs/2.3/bkn/en/station_status.json";
     private readonly ILogger<StationStatusService> _logger;
@@ -32,7 +37,7 @@ public class StationStatusService : BackgroundService
             StationStatusResponseDto? stationStatusResponse =
                 await client.GetFromJsonAsync<StationStatusResponseDto>(
                     ApiAddress,
-                    new JsonSerializerOptions(JsonSerializerDefaults.Web),
+                    JsonOptions,
                     cancellationToken);
 
             if (stationStatusResponse is null)
