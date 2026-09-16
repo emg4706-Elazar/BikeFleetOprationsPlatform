@@ -2,6 +2,8 @@
 using Microsoft.Extensions.Hosting;
 using Processor.Configuration;
 using Processor.Services;
+using Processor.Handlers;
+
 namespace Processor;
 
 public class Program
@@ -33,6 +35,18 @@ public class Program
             .ValidateOnStart();
 
         builder.Services.AddHostedService<KafkaConsumerService>();
+
+        builder.Services.AddSingleton<
+            IStationInformationHandler,
+            StationInformationHandler>();
+
+        builder.Services.AddSingleton<
+            IVehicleTypesHandler,
+            VehicleTypesHandler>();
+
+        builder.Services.AddSingleton<
+            IStationStatusHandler,
+            StationStatusHandler>();
 
         using IHost host = builder.Build();
 

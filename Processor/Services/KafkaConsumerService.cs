@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Processor.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Hosting;
+using Processor.Handlers;
 
 
 namespace Processor.Services;
@@ -12,14 +13,22 @@ public class KafkaConsumerService : BackgroundService
     private readonly IConsumer<string, string> _consumer;
     private readonly ILogger<KafkaConsumerService> _logger;
     private readonly KafkaOptions _kafkaOptions;
+    private readonly IStationInformationHandler _stationInformationHandler;
+    private readonly IVehicleTypesHandler _vehicleTypesHandler;
+    private readonly IStationStatusHandler _stationStatusHandler;
 
     public KafkaConsumerService(
         ILogger<KafkaConsumerService> logger,
-        IOptions<KafkaOptions> options)
+        IOptions<KafkaOptions> options,
+        IStationInformationHandler stationInformationHandler,
+        IVehicleTypesHandler vehicleTypesHandler,
+        IStationStatusHandler stationStatusHandler)
     {
         _logger = logger;
-
         _kafkaOptions = options.Value;
+        _stationInformationHandler = stationInformationHandler;
+        _vehicleTypesHandler = vehicleTypesHandler;
+        _stationStatusHandler = stationStatusHandler;
 
         ConsumerConfig config = new()
         {
@@ -56,18 +65,63 @@ public class KafkaConsumerService : BackgroundService
 
         try
         {
+            
             while (!stoppingToken.IsCancellationRequested)
             {
                 ConsumeResult<string, string> result =
                     _consumer.Consume(stoppingToken);
 
-                _logger.LogInformation(
-                    "Consumed message from topic {Topic}. " +
-                    "Key: {Key}, Partition: {pPartition}, offset: {Offset}.",
-                    result.Topic,
-                    result.Message.Key,
-                    result.Partition,
-                    result.Offset);
+                if (result.Message.Value is null)
+                {
+                    _logger.LogWarning(
+                        "Received null message from topic {Topic}, key {Key}.",
+                        result.Topic,
+                        result.Message.Key);
+                    continue;
+                }
+
+
+                switch (result.Topic)
+                {
+                    case var topic
+                        when topic == 
+                        _kafkaOptions.Topics.StationInformation:
+
+                        await _stationInformationHandler
+                            .HandleAsync(
+                            result.Message.Value,
+                            stoppingToken);
+                        break;
+
+                    case var topic
+                        when topic ==
+                        _kafkaOptions.Topics.StationStatus:
+
+                        await _stationStatusHandler
+                            .HandleAsync(
+                            result.Message.Value,
+                            stoppingToken);
+
+                        break;
+
+                    case var topic
+                        when topic ==
+                        _kafkaOptions.Topics.VehicleTypes:
+
+                        await _vehicleTypesHandler
+                            .HandleAsync(
+                            result.Message.Value,
+                            stoppingToken);
+
+                        break;
+
+                    default:
+                        _logger.LogWarning(
+                            "Received message from unknown topic {Topic}.",
+                            result.Topic);
+
+                        break;
+                }
             }
         }
         catch (OperationCanceledException)
@@ -80,7 +134,7 @@ public class KafkaConsumerService : BackgroundService
         {
             _logger.LogError(
                 ex,
-                "kafka consumer error: {reason}",
+                "kafka consumer error: {Reason}",
                 ex.Error.Reason);
         }
         finally
