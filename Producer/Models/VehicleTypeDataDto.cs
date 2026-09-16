@@ -3,5 +3,5 @@ namespace Producer.Models;
 
 public class VehicleTypeDataDto
 {
-    public List<VehicleTypeDto> Vehicles { get; set; } = new();
+    public List<VehicleTypeDto> VehicleTypes { get; set; } = new();
 }

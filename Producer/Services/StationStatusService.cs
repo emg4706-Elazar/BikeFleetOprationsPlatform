@@ -60,12 +60,12 @@ public class StationStatusService : BackgroundService
             stationStatusResponse.Data.Stations = validStations;
 
             _logger.LogInformation(
-                "{InvalidCount} Invalid station statuses.",
-                invalidCount);
-
-            _logger.LogInformation(
                 "{ValidCount} valid station statuses.",
                 validStations.Count);
+
+            _logger.LogInformation(
+                "{InvalidCount} Invalid station statuses.",
+                invalidCount);
 
             return stationStatusResponse;
         }

@@ -49,10 +49,25 @@ public class StationInformationService : BackgroundService
                 return null;
             }
 
+            var validStations =
+                stationInformationResponse.Data.Stations
+                .Where(IsValid)
+                .ToList();
+
+            int invalidCount =
+                stationInformationResponse.Data.Stations.Count -
+                validStations.Count;
+
+            stationInformationResponse.Data.Stations = validStations;
+
             _logger.LogInformation(
-                "Received {StationCount} station information records",
-                stationInformationResponse.Data.Stations.Count
+                "Received {StationCount} valid station information records",
+                validStations.Count
             );
+
+            _logger.LogInformation(
+                "{InvalidCount} Invalid station information records received.",
+                invalidCount);
 
             return stationInformationResponse;
         }
@@ -101,5 +116,26 @@ public class StationInformationService : BackgroundService
     }
 
 
+    private static bool IsValid(
+        StationInformationDto stationInformation)
+    {
+        if (string.IsNullOrWhiteSpace(stationInformation.StationId))
+            return false;
 
+        if (stationInformation.Lat < -90 ||
+            stationInformation.Lat > 90)
+            return false;
+
+        if (stationInformation.Lon < -180 ||
+            stationInformation.Lon > 180)
+            return false;
+
+        if (stationInformation.Capacity < 0)
+            return false;
+
+        if (string.IsNullOrWhiteSpace(stationInformation.Name))
+            return false;
+
+        return true;
+    }
 }

@@ -16,6 +16,7 @@ public class Program
 
         builder.Services.AddHostedService<StationStatusService>();
         builder.Services.AddHostedService<StationInformationService>();
+        builder.Services.AddHostedService<VehicleTypeService>();
 
         using IHost host = builder.Build();
 
