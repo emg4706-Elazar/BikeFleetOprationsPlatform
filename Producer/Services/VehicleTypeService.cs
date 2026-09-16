@@ -9,8 +9,10 @@ namespace Producer.Services;
 public class VehicleTypeService : BackgroundService
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IKafkaProducerService _kafkaProducer;
     private const string ApiAddress =
         "https://gbfs.lyft.com/gbfs/2.3/bkn/en/vehicle_types.json";
+    private const string TopicName = "bike.vehicle-types";
     private readonly ILogger<VehicleTypeService> _logger;
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web)
@@ -20,9 +22,11 @@ public class VehicleTypeService : BackgroundService
 
     public VehicleTypeService(
         IHttpClientFactory httpClientFactory,
+        IKafkaProducerService kafkaProducer,
         ILogger<VehicleTypeService> logger)
     {
         _httpClientFactory = httpClientFactory;
+        _kafkaProducer = kafkaProducer;
         _logger = logger;
     }
 
@@ -68,6 +72,12 @@ public class VehicleTypeService : BackgroundService
                 "{InvalidCount} invalid vehicle types records.",
                 invalidCount);
 
+
+            await _kafkaProducer.PublishBatchAsync(
+                TopicName,
+                validVehicles,
+                vehicle => vehicle.VehicleTypeId,
+                cancellationToken);
 
             return vehicleTypeResponse;
         }

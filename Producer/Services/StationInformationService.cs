@@ -9,6 +9,7 @@ namespace Producer.Services;
 public class StationInformationService : BackgroundService
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IKafkaProducerService _kafkaProducer;
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web)
         {
@@ -16,13 +17,16 @@ public class StationInformationService : BackgroundService
         };
     private const string ApiAddress =
         "https://gbfs.lyft.com/gbfs/2.3/bkn/en/station_information.json";
+    private const string TopicName = "bike.station-information";
     private readonly ILogger<StationInformationService> _logger;
 
     public StationInformationService(
         IHttpClientFactory httpClientFactory,
+        IKafkaProducerService kafkaProducer,
         ILogger<StationInformationService> logger)
     {
         _httpClientFactory = httpClientFactory;
+        _kafkaProducer = kafkaProducer;
         _logger = logger;
     }
 
@@ -68,6 +72,12 @@ public class StationInformationService : BackgroundService
             _logger.LogInformation(
                 "{InvalidCount} Invalid station information records received.",
                 invalidCount);
+
+            await _kafkaProducer.PublishBatchAsync(
+                TopicName,
+                validStations,
+                station => station.StationId,
+                cancellationToken);
 
             return stationInformationResponse;
         }

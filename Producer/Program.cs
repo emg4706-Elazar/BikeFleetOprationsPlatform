@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Producer.Services;
+using Producer.Configuration;
 
 namespace Producer;
 
@@ -13,6 +13,23 @@ public class Program
             Host.CreateApplicationBuilder(args);
 
         builder.Services.AddHttpClient();
+
+        builder.Services
+            .AddOptions<KafkaOptions>()
+            .Bind(builder.Configuration.GetSection("kafka"))
+            .Validate(
+                options => !string.IsNullOrWhiteSpace(
+                    options.BootstrapServers),
+                "Kafka:BootstrapServers is required.")
+            .Validate(
+                options => !string.IsNullOrWhiteSpace(
+                    options.ClientId),
+                "Kafka:ClientId is required.")
+            .ValidateOnStart();
+
+        builder.Services.AddSingleton<
+            IKafkaProducerService,
+            KafkaProducerService>();
 
         builder.Services.AddHostedService<StationStatusService>();
         builder.Services.AddHostedService<StationInformationService>();
