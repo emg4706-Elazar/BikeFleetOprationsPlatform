@@ -32,7 +32,7 @@ public class StationStatusDto
 	public long LastReported { get; set; }
 
 	[JsonPropertyName("vehicle_types_available")]
-	public List<VehicleTypeAvailableDto> VehicleTypesAvailable { get; set; }
+	public List<VehicleTypeAvailability> VehicleTypesAvailable { get; set; }
         = new();
 
     [JsonPropertyName("num_ebikes_available")]

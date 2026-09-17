@@ -1,8 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 using Processor.Configuration;
 using Processor.Services;
 using Processor.Handlers;
+using Processor.Models;
 
 namespace Processor;
 
@@ -34,7 +37,23 @@ public class Program
                     "All Kafka topic names are required.")
             .ValidateOnStart();
 
-        builder.Services.AddHostedService<KafkaConsumerService>();
+
+        builder.Services.AddOptions<MongoOptions>()
+            .Bind(builder.Configuration.GetSection("Mongo"))
+            .Validate(options =>
+                !string.IsNullOrWhiteSpace(options.ConnectionString),
+                "Mongo:ConnectionString is required")
+            .Validate(options =>
+                !string.IsNullOrWhiteSpace(options.DatabaseName),
+                "Mongo:DatabaseName is required")
+            .Validate(options =>
+                !string.IsNullOrWhiteSpace(options.CollectionName),
+                "Mongo:CollectionName is required")
+            .ValidateOnStart();
+
+
+        builder.Services.AddHostedService<
+            KafkaConsumerService>();
 
         builder.Services.AddSingleton<
             IStationInformationHandler,
@@ -48,7 +67,39 @@ public class Program
             IStationStatusHandler,
             StationStatusHandler>();
 
+        builder.Services.AddSingleton<IMongoClient>(
+            serviceProvider =>
+            {
+                MongoOptions options =
+                    serviceProvider.GetRequiredService<
+                        IOptions<MongoOptions>>()
+                        .Value;
+
+                return new MongoClient(
+                    options.ConnectionString);
+            });
+
+        builder.Services.AddSingleton<IMongoCollection<StationStatusHistory>>(
+            serviceProvider =>
+            {
+                IMongoClient client =
+                serviceProvider.GetRequiredService<IMongoClient>();
+
+                MongoOptions options =
+                serviceProvider
+                    .GetRequiredService<IOptions<MongoOptions>>()
+                    .Value;
+
+                IMongoDatabase database =
+                client.GetDatabase(options.CollectionName);
+
+                return database
+                .GetCollection<StationStatusHistory>(
+                    options.CollectionName);
+            });
+
         using IHost host = builder.Build();
+
 
         await host.RunAsync();
     }

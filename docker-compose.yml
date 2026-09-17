@@ -4,3 +4,10 @@ services:
     container_name: broker
     ports:
       - "9092:9092"
+
+
+  mongo:
+    image: mongo
+    container_name: Mongo_Db
+    ports:
+      - "27017:27017"
