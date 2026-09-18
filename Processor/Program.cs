@@ -41,7 +41,7 @@ public class Program
                     "All Kafka topic names are required.")
             .ValidateOnStart();
 
-
+        // Register the Mongo options in the DI
         builder.Services.AddOptions<MongoOptions>()
             .Bind(builder.Configuration.GetSection("Mongo"))
             .Validate(options =>
@@ -166,6 +166,21 @@ public class Program
             });
 
         using IHost host = builder.Build();
+
+
+        // Run the migrations in mysql
+        await using (AsyncServiceScope scope =
+            host.Services.CreateAsyncScope())
+        {
+            IDbContextFactory<BikeFleetDbContext> contextFactory =
+                scope.ServiceProvider.GetRequiredService<
+                    IDbContextFactory<BikeFleetDbContext>>();
+
+            await using BikeFleetDbContext context =
+                await contextFactory.CreateDbContextAsync();
+
+            await context.Database.MigrateAsync();
+        }
 
 
         await host.RunAsync();
