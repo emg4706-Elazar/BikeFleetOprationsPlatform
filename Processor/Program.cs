@@ -6,6 +6,9 @@ using Processor.Configuration;
 using Processor.Services;
 using Processor.Handlers;
 using Processor.Models;
+using StackExchange.Redis;
+using Microsoft.EntityFrameworkCore;
+using Processor.Data;
 
 namespace Processor;
 
@@ -16,6 +19,7 @@ public class Program
         HostApplicationBuilder builder =
             Host.CreateApplicationBuilder(args);
 
+        // Add kakfa configuration to DI
         builder.Services.AddOptions<KafkaOptions>()
             .Bind(builder.Configuration.GetSection("Kafka"))
             .Validate(options =>
@@ -51,22 +55,26 @@ public class Program
                 "Mongo:CollectionName is required")
             .ValidateOnStart();
 
-
+        // Register the Consumer service
         builder.Services.AddHostedService<
             KafkaConsumerService>();
 
+        // Register the station information handler
         builder.Services.AddSingleton<
             IStationInformationHandler,
             StationInformationHandler>();
 
+        // Register the vehicle type handler
         builder.Services.AddSingleton<
             IVehicleTypesHandler,
             VehicleTypesHandler>();
 
+        // Register the station status handler
         builder.Services.AddSingleton<
             IStationStatusHandler,
             StationStatusHandler>();
 
+        // Add mongo configuration into DI
         builder.Services.AddSingleton<IMongoClient>(
             serviceProvider =>
             {
@@ -79,6 +87,7 @@ public class Program
                     options.ConnectionString);
             });
 
+        // Register the mongo connection represents the collection
         builder.Services.AddSingleton<IMongoCollection<StationStatusHistory>>(
             serviceProvider =>
             {
@@ -91,11 +100,69 @@ public class Program
                     .Value;
 
                 IMongoDatabase database =
-                client.GetDatabase(options.CollectionName);
+                client.GetDatabase(options.DatabaseName);
 
                 return database
                 .GetCollection<StationStatusHistory>(
                     options.CollectionName);
+            });
+
+        // Add the mysql configuration into the DI
+        builder.Services.AddOptions<MySqlOptions>()
+            .Bind(builder.Configuration.GetSection("MySql"))
+            .Validate(options =>
+                !string.IsNullOrWhiteSpace(options.ConnectionString),
+                "MySql:ConnectionString is required")
+            .ValidateOnStart();
+
+        // Register the mysql connection represents the database
+        builder.Services.AddPooledDbContextFactory<
+            BikeFleetDbContext>(
+            (serviceProvider, optionsBuilder) =>
+            {
+                MySqlOptions mySqlOptions =
+                    serviceProvider
+                        .GetRequiredService<
+                            IOptions<MySqlOptions>>()
+                            .Value;
+
+                optionsBuilder.UseMySql(
+                    mySqlOptions.ConnectionString,
+                    new MySqlServerVersion(
+                        new Version(8, 4, 0)));
+            });
+
+        // Register the redis options into the DI
+        builder.Services.AddOptions<RedisOptions>()
+            .Bind(builder.Configuration.GetSection("Redis"))
+            .Validate(options =>
+                !string.IsNullOrWhiteSpace(options.ConnectionString),
+                "Redis:ConnectionString is required")
+            .ValidateOnStart();
+
+        // Register the Redis connection into the DI
+        builder.Services.AddSingleton<IConnectionMultiplexer>(
+            serviceProvider =>
+            {
+                RedisOptions options =
+                    serviceProvider.GetRequiredService<
+                        IOptions<RedisOptions>>()
+                        .Value;
+
+                return ConnectionMultiplexer.Connect(
+                    options.ConnectionString);
+            });
+
+        // Add Redis database into the DI
+        builder.Services.AddSingleton<IDatabase>(
+            serviceProvider =>
+            {
+                IConnectionMultiplexer connection =
+                    serviceProvider.GetRequiredService<
+                        IConnectionMultiplexer>();
+
+
+                return connection.GetDatabase();
             });
 
         using IHost host = builder.Build();

@@ -2,24 +2,28 @@
 using Processor.Models;
 using System.Text.Json;
 using MongoDB.Driver;
+using StackExchange.Redis;
 
 namespace Processor.Handlers;
 
 public class StationStatusHandler : IStationStatusHandler
 {
     private readonly ILogger<StationStatusHandler> _logger;
+    private readonly IDatabase _redisDatabase;
     private readonly IMongoCollection<StationStatusHistory> _collection;
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web)
         {
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
         };
-    
+
     public StationStatusHandler(
+        IDatabase redisDatabase,
         IMongoCollection<StationStatusHistory> collection,
         ILogger<StationStatusHandler> logger)
     {
         _logger = logger;
+        _redisDatabase = redisDatabase;
         _collection = collection;
     }
 
@@ -40,6 +44,13 @@ public class StationStatusHandler : IStationStatusHandler
                 "Station status message returned null");
         }
 
+        string redisKey =
+            $"station-status:{station.StationId}";
+
+        await _redisDatabase.StringSetAsync(
+            redisKey,
+            json);
+
         StationStatusHistory history =
             MapToHistory(station);
 
@@ -47,9 +58,9 @@ public class StationStatusHandler : IStationStatusHandler
             history,
             cancellationToken: cancellationToken);
 
-        _logger.LogDebug(
-        "Saved status history for station {StationId}.",
-        history.StationId);
+        _logger.LogInformation(
+            "Saved station history for station {StationId}.",
+            history.StationId);
     }
     
     private static StationStatusHistory MapToHistory(StationStatusDto dto)

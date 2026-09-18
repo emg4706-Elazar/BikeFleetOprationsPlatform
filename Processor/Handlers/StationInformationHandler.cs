@@ -1,6 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using Processor.Models;
+using Processor.Data;
+using Processor.Data.Entities;
 
 namespace Processor.Handlers;
 
@@ -8,6 +11,7 @@ public class StationInformationHandler :
     IStationInformationHandler
 {
     private readonly ILogger<StationInformationHandler> _logger;
+    private readonly IDbContextFactory<BikeFleetDbContext> _contextFactory;
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web)
         {
@@ -15,13 +19,15 @@ public class StationInformationHandler :
         };
 
     public StationInformationHandler(
+        IDbContextFactory<BikeFleetDbContext> contextFactory,
         ILogger<StationInformationHandler> logger)
     {
         _logger = logger;
+        _contextFactory = contextFactory;
     }
 
 
-    public Task HandleAsync(
+    public async Task HandleAsync(
         string json,
         CancellationToken cancellationToken)
     {
@@ -36,10 +42,53 @@ public class StationInformationHandler :
                 "Station information message returned null.");
         }
 
-        _logger.LogInformation(
-            "Handled station information for station {StationId}.",
-            station.StationId);
+        StationEntity entity =
+            MapToEntity(station);
 
-        return Task.CompletedTask;
+        await using BikeFleetDbContext context =
+            await _contextFactory.CreateDbContextAsync(
+                cancellationToken);
+
+        StationEntity? existing =
+            await context.Stations.FindAsync(
+                [entity.StationId],
+                cancellationToken);
+
+        if (existing is null)
+        {
+            context.Stations.Add(entity);
+        }
+        else
+        {
+            context.Entry(existing)
+                .CurrentValues
+                .SetValues(entity);
+        }
+
+        await context.SaveChangesAsync(
+            cancellationToken);
+
+        _logger.LogInformation(
+            "Saved station information for station {StationId}.",
+            entity.StationId);
+    }
+
+
+    private static StationEntity MapToEntity(
+        StationInformationDto dto)
+    {
+        return new StationEntity
+        {
+            StationId = dto.StationId,
+            Name = dto.Name,
+            ShortName = dto.ShortName,
+            Longitude = (decimal)dto.Lon,
+            Latitude = (decimal)dto.Lat,
+            RegionId = dto.RegionId,
+            Capacity = dto.Capacity,
+            AndroidUri = dto.RentalUris?.Android,
+            IosUri = dto.RentalUris?.Ios,
+            WebUri = dto.RentalUris?.Web
+        };
     }
 }

@@ -120,8 +120,10 @@ public class KafkaConsumerService : BackgroundService
                             "Received message from unknown topic {Topic}.",
                             result.Topic);
 
-                        break;
+                        continue;
                 }
+
+                _consumer.Commit(result);
             }
         }
         catch (OperationCanceledException)

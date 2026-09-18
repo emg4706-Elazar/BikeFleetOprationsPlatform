@@ -1,12 +1,17 @@
-﻿using Microsoft.Extensions.Logging;
-using System.Text.Json;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Processor.Data;
+using Processor.Data.Entities;
 using Processor.Models;
+using System.Text.Json;
 
 namespace Processor.Handlers;
 
 public class VehicleTypesHandler : IVehicleTypesHandler
 {
     private readonly ILogger<VehicleTypesHandler> _logger;
+    private readonly IDbContextFactory<BikeFleetDbContext>
+        _contextFactory;
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web)
         {
@@ -14,13 +19,16 @@ public class VehicleTypesHandler : IVehicleTypesHandler
         };
 
     public VehicleTypesHandler(
-        ILogger<VehicleTypesHandler> logger)
+        IDbContextFactory<BikeFleetDbContext>
+        contextFactory,
+    ILogger<VehicleTypesHandler> logger)
     {
+        _contextFactory = contextFactory;
         _logger = logger;
     }
 
 
-    public Task HandleAsync(
+    public async Task HandleAsync(
         string json,
         CancellationToken cancellationToken)
     {
@@ -36,10 +44,48 @@ public class VehicleTypesHandler : IVehicleTypesHandler
                 "Vehicle Type message returned null");
         }
 
-        _logger.LogInformation(
-            "Handled vehicle type message for vehicle {VehicleId}",
-            vehicle.VehicleTypeId);
+        VehicleTypeEntity entity =
+            MapToEntity(vehicle);
 
-        return Task.CompletedTask;
+        await using var context =
+            await _contextFactory
+            .CreateDbContextAsync(
+                cancellationToken);
+
+        VehicleTypeEntity? existing =
+            await context.VehicleTypes
+            .FindAsync([entity.VehicleTypeId],
+            cancellationToken);
+
+        if (existing is null)
+        {
+            context.VehicleTypes.Add(entity);
+        }
+        else
+        {
+            context.Entry(existing)
+                .CurrentValues
+                .SetValues(entity);
+        }
+
+        await context.SaveChangesAsync(
+            cancellationToken);
+
+        _logger.LogInformation(
+            "Saved vehicle type for vehicle {VehicleId}.",
+            entity.VehicleTypeId);
+    }
+
+
+    private static VehicleTypeEntity MapToEntity(
+        VehicleTypeDto dto)
+    {
+        return new VehicleTypeEntity
+        {
+            VehicleTypeId = dto.VehicleTypeId,
+            FormFactor = dto.FormFactor,
+            PropulsionType = dto.PropulsionType,
+            MaxRangeMeters = (decimal?)dto.MaxRangeMeters
+        };
     }
 }
