@@ -6,6 +6,7 @@ using MongoDB.Driver;
 using StackExchange.Redis;
 using Api.Repositories;
 using Api.Models;
+using Api.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -128,6 +129,13 @@ builder.Services.AddSingleton<IDatabase>(
 builder.Services.AddScoped<IStationInformationRepository,
     StationInformationRepository>();
 
+// Register the station status repository
+builder.Services.AddScoped<IStationStatusRepository,
+    StationStatusRepository>();
+
+// Register the station service
+builder.Services.AddScoped<IStationService,
+    StationService>();
 
 var app = builder.Build();
 

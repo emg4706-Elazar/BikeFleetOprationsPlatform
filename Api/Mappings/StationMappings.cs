@@ -5,21 +5,28 @@ namespace Api.Mappings;
 
 public static class StationMappings
 {
-    public static StationInfoResponseDto ToResponseDto(
-        this StationEntity entity)
+    public static StationFilterdResponseDto ToResponseDto(
+        this StationEntity status,
+        StationStatusDto? currentStatus)
     {
-        return new StationInfoResponseDto
+        return new StationFilterdResponseDto
         {
-            StationId = entity.StationId,
-            Name = entity.Name,
-            ShortName = entity.ShortName,
-            Longitude = entity.Longitude,
-            Latitude = entity.Latitude,
-            RegionId = entity.RegionId,
-            Capacity = entity.Capacity,
-            AndroidUri = entity.AndroidUri,
-            IosUri = entity.IosUri,
-            WebUri = entity.WebUri
+            Id = status.StationId,
+            Name = status.Name,
+            Longitude = status.Longitude,
+            Latitude = status.Latitude,
+            Capacity = status.Capacity,
+
+            AvailableBikes = currentStatus?.NumBikesAvailable,
+            AvailableDocks = currentStatus?.NumDocksAvailable,
+            
+            IsRenting = currentStatus is null
+                ? null
+                : currentStatus.IsRenting == 1,
+
+            IsReturning = currentStatus is null
+                ? null
+                : currentStatus.IsReturning == 1
         };
     }
 }

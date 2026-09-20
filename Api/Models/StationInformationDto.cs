@@ -2,7 +2,7 @@
 
 namespace Api.Models;
 
-public class StationInfoResponseDto
+public class StationInformationResponseDto
 {
     public string StationId { get; set; } = null!;
     public string Name { get; set; } = null!;
