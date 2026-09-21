@@ -1,0 +1,5 @@
+
+// api
+dotnet add package Pomelo.EntityFrameworkCore.MySql --version 9.0.0
+dotnet add package MongoDB.Driver --version 3.11.2
+dotnet add package StackExchange.Redis --version 3.3.0
