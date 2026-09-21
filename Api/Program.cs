@@ -137,6 +137,10 @@ builder.Services.AddScoped<IStationStatusRepository,
 builder.Services.AddScoped<IStationService,
     StationService>();
 
+// Register the station history repository
+builder.Services.AddScoped<IStationHistoryRepository,
+    StationHistoryRepository>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

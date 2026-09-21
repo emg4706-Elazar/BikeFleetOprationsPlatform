@@ -83,4 +83,45 @@ public class StationsController : ControllerBase
 
         return Ok(status);
     }
+
+
+    // Endpoint 4 - station history
+    [HttpGet("{id}/history")]
+    public async Task<ActionResult<
+        List<StationHistoryResponseDto>>> GetHistoryAsync(
+        string id,
+        DateTime? from,
+        DateTime? to,
+        int? limit,
+        CancellationToken cancellationToken)
+    {
+        if (limit.HasValue && limit.Value <= 0)
+        {
+            return BadRequest(
+                "Limit must be greater than zero.");
+        }
+
+        if (from.HasValue &&
+            to.HasValue &&
+            from.Value > to.Value)
+        {
+            return BadRequest(
+                "from cannot be later than to");
+        }
+
+        List<StationHistoryResponseDto>? response =
+            await _stationService.GetHistoryAsync(
+                id,
+                from,
+                to,
+                limit,
+                cancellationToken);
+
+        if (response is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(response);
+    }
 }

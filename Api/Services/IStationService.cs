@@ -19,5 +19,13 @@ namespace Api.Services
         GetCurrentStatusAsync(
         string stationId,
         CancellationToken cancellationToken);
+
+        Task<List<StationHistoryResponseDto>?>
+            GetHistoryAsync(
+            string stationId,
+            DateTime? from,
+            DateTime? to,
+            int? limit,
+            CancellationToken cancellationToken);
     }
 }

@@ -15,7 +15,7 @@ public static class StationStatusMappings
             AvailableBikes = status.NumBikesAvailable,
             AvailableDocks = status.NumDocksAvailable,
             IsRenting = status.IsRenting == 1,
-            IsReturing = status.IsReturning == 1,
+            IsReturning = status.IsReturning == 1,
             LastReported = status.LastReported
         };
     }

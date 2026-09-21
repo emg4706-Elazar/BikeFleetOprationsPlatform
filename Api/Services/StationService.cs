@@ -9,14 +9,17 @@ public class StationService : IStationService
 {
     private readonly IStationInformationRepository _stationRepository;
     private readonly IStationStatusRepository _statusRepository;
+    private readonly IStationHistoryRepository _historyRepository;
 
 
     public StationService(
         IStationInformationRepository stationRepository,
-        IStationStatusRepository statusRepository)
+        IStationStatusRepository statusRepository,
+        IStationHistoryRepository historyRepository)
     {
         _stationRepository = stationRepository;
         _statusRepository = statusRepository;
+        _historyRepository = historyRepository;
     }
 
 
@@ -120,5 +123,39 @@ public class StationService : IStationService
         }
 
         return status.ToResponseDto();
+    }
+
+
+    // Endpoint 4 - station history
+    public async Task<List<StationHistoryResponseDto>?>
+        GetHistoryAsync(
+            string stationId,
+            DateTime? from,
+            DateTime? to,
+            int? limit,
+            CancellationToken cancellationToken)
+    {
+        StationEntity? station =
+            await _stationRepository.GetByIdAsync(
+                stationId,
+                cancellationToken);
+
+        if (station is null)
+        {
+            return null;
+        }
+
+        List<StationStatusHistory> history =
+            await _historyRepository.GetAsync(
+                stationId,
+                from,
+                to,
+                limit,
+                cancellationToken);
+
+        return history
+            .Select(record =>
+            record.ToResponseDto())
+            .ToList();
     }
 }
